@@ -6,7 +6,6 @@
 <title>Daily Fitness Checklist</title>
 
 <style>
-/* ====== Visual Theme ====== */
 :root {
   --blue1: rgba(56,189,248,0.35);
   --blue2: rgba(59,130,246,0.45);
@@ -25,7 +24,6 @@ h1 { margin: 16px; }
 .month { margin-bottom: 24px; }
 h2 { margin: 8px 16px; font-size: 1rem; opacity: .75; }
 
-/* ====== Calendar ====== */
 .grid {
   display: grid;
   grid-template-columns: repeat(7,1fr);
@@ -52,6 +50,7 @@ h2 { margin: 8px 16px; font-size: 1rem; opacity: .75; }
   width: var(--fill,0%);
   background: linear-gradient(90deg,var(--blue1),var(--blue2));
   transition: width .25s ease-out;
+  z-index: 0;
 }
 
 .day.gray::before {
@@ -62,8 +61,9 @@ h2 { margin: 8px 16px; font-size: 1rem; opacity: .75; }
 
 .day.green {
   border-color: #22c55e;
-  box-shadow: 0 0 0 1px rgba(34,197,94,.6),
-              0 0 14px rgba(34,197,94,.25);
+  box-shadow:
+    0 0 0 1px rgba(34,197,94,.6),
+    0 0 14px rgba(34,197,94,.25);
 }
 .day.yellow { border-color: #eab308; }
 .day.gray { border-color: #64748b; }
@@ -82,7 +82,7 @@ h2 { margin: 8px 16px; font-size: 1rem; opacity: .75; }
 
 .pct { font-size:.6rem; opacity:.7; }
 
-/* ====== Modal ====== */
+/* Modal */
 .modal {
   position: fixed;
   inset: 0;
@@ -101,7 +101,11 @@ h2 { margin: 8px 16px; font-size: 1rem; opacity: .75; }
   padding: 16px;
 }
 
-label { display:flex; gap:8px; padding:8px 0; }
+label {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
 
 input[type=number], textarea {
   width:100%;
@@ -111,7 +115,7 @@ input[type=number], textarea {
 }
 
 .progress {
-  height:6px;
+  height: 6px;
   background:#111827;
   border-radius:4px;
   overflow:hidden;
@@ -123,7 +127,7 @@ input[type=number], textarea {
 }
 
 .bulk {
-  margin-top: 14px;
+  margin-top: 16px;
   border-top: 1px solid #1e293b;
   padding-top: 12px;
 }
@@ -136,6 +140,17 @@ button {
   border-radius:999px;
   background:#38bdf8;
   cursor:pointer;
+}
+
+.footer {
+  text-align: center;
+  padding: 24px;
+  opacity: .7;
+}
+
+.footer a {
+  color: #38bdf8;
+  text-decoration: none;
 }
 </style>
 </head>
@@ -156,8 +171,9 @@ button {
 
     <div id="checklist"></div>
 
+    <!-- ✅ BULK PASTE -->
     <div class="bulk">
-      <strong style="font-size:.8rem">Bulk step paste</strong>
+      <strong style="font-size:.8rem;">Bulk step paste</strong>
       <textarea id="bulkInput"
         placeholder="2026-04-01, 12345&#10;2026-04-02, 8450"></textarea>
       <button onclick="applyBulkSteps()">Apply Entries</button>
@@ -167,8 +183,12 @@ button {
   </div>
 </div>
 
+<!-- ✅ WEIGHT PAGE LINK -->
+<div class="footer">
+  <a href="weight.html">→ Go to Weight Tracker</a>
+</div>
+
 <script>
-/* ====== Data ====== */
 var checklistItems = [
   "8000 Steps",
   "Less than 8000 Steps but played basketball",
@@ -188,13 +208,14 @@ var storageKey = "dailyChecklist";
 var saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
 var year = new Date().getFullYear();
 var todayKey = new Date().toISOString().slice(0,10);
+
 var monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-document.getElementById("title").innerText = year + " Fitness Tracker";
+title.innerText = year + " Fitness Tracker";
 
-/* ====== Helpers ====== */
-function getTruePct(steps){ return Math.round((steps/8000)*100); }
-function getFillPct(steps){ return Math.min(100,getTruePct(steps)); }
+/* Helpers */
+function truePct(steps){ return Math.round((steps/8000)*100); }
+function fillPct(steps){ return Math.min(100,truePct(steps)); }
 
 function getDayClass(key){
   var d=saved[key]||{};
@@ -212,11 +233,10 @@ function getDayClass(key){
   return "";
 }
 
-/* ====== Modal ====== */
+/* Modal */
 function openModal(key){
-  var list=document.getElementById("checklist");
-  list.innerHTML="";
-  document.getElementById("modalDate").innerText=key;
+  checklist.innerHTML="";
+  modalDate.innerText=key;
 
   var steps=saved[key]?.steps||0;
   stepInput.value=steps||"";
@@ -228,7 +248,7 @@ function openModal(key){
     saved[key].steps=v;
     saved[key][step8000]=v>=8000;
     saved[key][stepUnder]=v>0 && v<8000;
-    saveAndRender();
+    save();
   };
 
   for(var i=2;i<checklistItems.length;i++){
@@ -240,28 +260,26 @@ function openModal(key){
     b.onchange=function(k,it){return function(e){
       saved[k]=saved[k]||{};
       saved[k][it]=e.target.checked;
-      saveAndRender();
+      save();
     }}(key,item);
     l.append(b,item);
-    list.append(l);
+    checklist.append(l);
   }
 
   modal.className="modal open";
 }
 
 function updateStepUI(steps){
-  var pct=getTruePct(steps);
-  stepBar.style.width=getFillPct(steps)+"%";
-  stepPct.innerText=pct+"% of 8000 steps";
+  stepBar.style.width=fillPct(steps)+"%";
+  stepPct.innerText=truePct(steps)+"% of 8000 steps";
 }
 
 function closeModal(){ modal.className="modal"; }
 
-/* ====== Bulk Import ====== */
+/* ✅ BULK IMPORT */
 function applyBulkSteps(){
-  var t=bulkInput.value.trim();
-  if(!t) return;
-  t.split(/\n+/).forEach(function(line){
+  var lines=bulkInput.value.trim().split(/\n+/);
+  lines.forEach(function(line){
     var p=line.split(/[, ]+/);
     if(p.length<2) return;
     var k=p[0], s=parseInt(p[1],10);
@@ -272,16 +290,17 @@ function applyBulkSteps(){
     saved[k][stepUnder]=s>0 && s<8000;
   });
   bulkInput.value="";
-  saveAndRender();
+  save();
   closeModal();
 }
 
-/* ====== Render ====== */
-function saveAndRender(){
+/* Save + render */
+function save(){
   localStorage.setItem(storageKey,JSON.stringify(saved));
   render();
 }
 
+/* Render */
 function render(){
   months.innerHTML="";
   for(var m=0;m<12;m++){
@@ -295,20 +314,18 @@ function render(){
     while(d.getMonth()===m){
       var k=d.toISOString().slice(0,10);
       var s=saved[k]?.steps||0;
-      var pct=s?getTruePct(s):"";
       var cls=getDayClass(k);
+      var badge=cls==="green"?"🔥":cls==="yellow"?"⚡":cls==="gray"?"🛌":"";
 
       var day=document.createElement("div");
       day.className="day "+cls+(k===todayKey?" today":"");
-      day.style.setProperty("--fill",getFillPct(s)+"%");
-
-      var badge=cls==="green"?"🔥":cls==="yellow"?"⚡":cls==="gray"?"🛌":"";
-      day.innerHTML=d.getDate()+(badge?"<div>"+badge+"</div>":"")+(pct?"<div class='pct'>"+pct+"%</div>":"");
-
+      day.style.setProperty("--fill",fillPct(s)+"%");
+      day.innerHTML=d.getDate()+(badge?"<div>"+badge+"</div>":"")+(s?"<div class='pct'>"+truePct(s)+"%</div>":"");
       day.onclick=function(k){return function(){openModal(k);}}(k);
       g.append(day);
       d.setDate(d.getDate()+1);
     }
+
     md.append(g);
     months.append(md);
   }
