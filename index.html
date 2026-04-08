@@ -6,6 +6,14 @@
 <title>Daily Fitness Checklist</title>
 
 <style>
+:root {
+  --blue1: rgba(56,189,248,0.35);
+  --blue2: rgba(59,130,246,0.45);
+  --gray1: rgba(148,163,184,0.25);
+  --gray2: rgba(100,116,139,0.35);
+}
+
+/* Base */
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
@@ -13,20 +21,17 @@ body {
   color: #e5e7eb;
 }
 
-h1 {
-  margin: 16px;
-}
+h1 { margin: 16px; }
 
-.month {
-  margin-bottom: 24px;
-}
+.month { margin-bottom: 24px; }
 
 h2 {
   margin: 8px 16px;
   font-size: 1rem;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
+/* Calendar */
 .grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -40,48 +45,65 @@ h2 {
   background: #020617;
   text-align: center;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 0.8rem;
   cursor: pointer;
   border: 1px solid #020617;
+  transition: transform .08s ease;
 }
 
-/* battery fill */
+.day:active { transform: scale(0.97); }
+
+/* Battery fill */
 .day::before {
   content: "";
   position: absolute;
   inset: 0;
   width: var(--fill, 0%);
-  background: rgba(56, 189, 248, 0.25);
+  background: linear-gradient(90deg, var(--blue1), var(--blue2));
   z-index: 0;
+  transition: width 0.25s ease-out;
 }
 
 .day.gray::before {
-  background: rgba(148, 163, 184, 0.25);
+  background: linear-gradient(90deg, var(--gray1), var(--gray2));
 }
 
-/* content above fill */
-.day > * {
-  position: relative;
-  z-index: 1;
+/* Content above fill */
+.day > * { position: relative; z-index: 1; }
+
+/* Borders */
+.day.green {
+  border-color: #22c55e;
+  box-shadow:
+    0 0 0 1px rgba(34,197,94,0.6),
+    0 0 14px rgba(34,197,94,0.25);
 }
 
-.day.green { border-color: #22c55e; }
 .day.yellow { border-color: #eab308; }
 .day.gray { border-color: #64748b; }
+
+/* Today pulse */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(56,189,248,0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(56,189,248,0); }
+  100% { box-shadow: 0 0 0 0 rgba(56,189,248,0); }
+}
 
 .day.today {
   outline: 2px solid #38bdf8;
   outline-offset: -2px;
+  animation: pulse 1.5s ease-out 1;
 }
 
+/* Tile text */
 .day .pct {
   font-size: 0.6rem;
-  opacity: 0.65;
+  opacity: 0.7;
   margin-top: 2px;
 }
 
-/* modal */
+/* Modal */
 .modal {
   position: fixed;
   inset: 0;
@@ -126,6 +148,7 @@ input[type="number"] {
 .progress div {
   height: 100%;
   background: #22c55e;
+  transition: width .2s ease-out;
 }
 
 button {
@@ -151,8 +174,9 @@ button {
 
     <label>Steps today</label>
     <input type="number" id="stepInput" placeholder="e.g. 6500" />
+
     <div class="progress"><div id="stepBar"></div></div>
-    <div id="stepPct" style="font-size:.75rem;opacity:.7;margin-bottom:10px"></div>
+    <div id="stepPct" style="font-size:.75rem;opacity:.7"></div>
 
     <div id="checklist"></div>
     <button onclick="closeModal()">Done</button>
@@ -193,47 +217,35 @@ var monthNames = [
 
 document.getElementById("title").innerText = year + " Fitness Tracker";
 
-function getStepPct(key) {
-  var steps = saved[key] && saved[key].steps;
-  if (!steps) return "";
+/* Helpers */
+
+function getTrueStepPct(steps) {
   return Math.round((steps / 8000) * 100);
+}
+
+function getFillPct(steps) {
+  return Math.min(100, getTrueStepPct(steps));
 }
 
 function getDayClass(key) {
   var data = saved[key] || {};
-
-  // Rest day always wins
   if (data[restItem]) return "gray";
 
-  // Step flags
-  var steps100 = data[step8000] === true;     // ≥ 8000
-  var stepsUnder = data[stepUnder] === true; // 1–7999
-
-  // Read raw step count for 12k rule
   var stepCount = data.steps || 0;
   var steps12000 = stepCount >= 12000;
+  var steps8000 = data[step8000] === true;
 
-  // Gym logic
   var gymDone = false;
-  for (var j = 0; j < gymItems.length; j++) {
-    if (data[gymItems[j]]) {
-      gymDone = true;
-      break;
-    }
+  for (var i = 0; i < gymItems.length; i++) {
+    if (data[gymItems[i]]) { gymDone = true; break; }
   }
 
-  // ✅ NEW GREEN CONDITIONS
-  if (steps12000 || (steps100 && gymDone)) {
-    return "green";
-  }
-
-  // Yellow if any meaningful effort
-  if (steps100 || stepsUnder || gymDone) {
-    return "yellow";
-  }
-
+  if (steps12000 || (steps8000 && gymDone)) return "green";
+  if (steps8000 || stepCount > 0 || gymDone) return "yellow";
   return "";
 }
+
+/* Modal */
 
 function openModal(dateKey) {
   var list = document.getElementById("checklist");
@@ -264,14 +276,14 @@ function openModal(dateKey) {
     box.type = "checkbox";
     box.checked = saved[dateKey] && saved[dateKey][item];
 
-    box.onchange = (function(dateKey, item) {
-      return function(e) {
+    box.onchange = (function(dateKey, item){
+      return function(e){
         if (!saved[dateKey]) saved[dateKey] = {};
         saved[dateKey][item] = e.target.checked;
         localStorage.setItem(storageKey, JSON.stringify(saved));
         render();
       };
-    })(dateKey, item);
+    })(dateKey,item);
 
     label.appendChild(box);
     label.appendChild(document.createTextNode(item));
@@ -282,14 +294,16 @@ function openModal(dateKey) {
 }
 
 function updateStepUI(steps) {
-  var pct = Math.min(100, Math.round((steps / 8000) * 100));
-  stepBar.style.width = pct + "%";
+  var pct = getTrueStepPct(steps);
+  stepBar.style.width = getFillPct(steps) + "%";
   stepPct.innerText = pct + "% of 8000 steps";
 }
 
 function closeModal() {
   document.getElementById("modal").className = "modal";
 }
+
+/* Render */
 
 function render() {
   monthsEl.innerHTML = "";
@@ -308,16 +322,24 @@ function render() {
     var d = new Date(year, m, 1);
     while (d.getMonth() === m) {
       var key = d.toISOString().slice(0,10);
-      var pct = getStepPct(key);
+      var data = saved[key] || {};
+      var steps = data.steps || 0;
+      var pct = steps ? getTrueStepPct(steps) : "";
 
       var day = document.createElement("div");
       day.className = "day " + getDayClass(key);
-      day.style.setProperty("--fill", pct + "%");
+      day.style.setProperty("--fill", getFillPct(steps) + "%");
       if (key === todayKey) day.className += " today";
+
+      var badge = "";
+      if (getDayClass(key) === "green") badge = "🔥";
+      else if (getDayClass(key) === "yellow") badge = "⚡";
+      else if (getDayClass(key) === "gray") badge = "🛌";
 
       day.innerHTML =
         d.getDate() +
-        (pct ? '<div class="pct">' + pct + '%</div>' : '');
+        (badge ? '<div>'+badge+'</div>' : '') +
+        (pct ? '<div class="pct">'+pct+'%</div>' : '');
 
       day.onclick = (function(key){
         return function(){ openModal(key); };
@@ -334,10 +356,5 @@ function render() {
 
 render();
 </script>
-<div style="text-align:center; padding:24px; opacity:.7;">
-  <a href="weight.html" style="color:#38bdf8; text-decoration:none;">
-    → Go to Weight Tracker
-  </a>
-</div>
 </body>
 </html>
