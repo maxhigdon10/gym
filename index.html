@@ -6,6 +6,7 @@
 <title>Daily Fitness Checklist</title>
 
 <style>
+/* ====== Visual Theme ====== */
 :root {
   --blue1: rgba(56,189,248,0.35);
   --blue2: rgba(59,130,246,0.45);
@@ -13,7 +14,6 @@
   --gray2: rgba(100,116,139,0.35);
 }
 
-/* Base */
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
@@ -22,19 +22,13 @@ body {
 }
 
 h1 { margin: 16px; }
-
 .month { margin-bottom: 24px; }
+h2 { margin: 8px 16px; font-size: 1rem; opacity: .75; }
 
-h2 {
-  margin: 8px 16px;
-  font-size: 1rem;
-  opacity: 0.75;
-}
-
-/* Calendar */
+/* ====== Calendar ====== */
 .grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7,1fr);
   gap: 6px;
   padding: 8px;
 }
@@ -43,49 +37,39 @@ h2 {
   position: relative;
   overflow: hidden;
   background: #020617;
-  text-align: center;
   padding: 8px;
   border-radius: 12px;
-  font-size: 0.8rem;
-  cursor: pointer;
+  text-align: center;
+  font-size: .8rem;
   border: 1px solid #020617;
-  transition: transform .08s ease;
+  cursor: pointer;
 }
 
-.day:active { transform: scale(0.97); }
-
-/* Battery fill */
 .day::before {
   content: "";
   position: absolute;
   inset: 0;
-  width: var(--fill, 0%);
-  background: linear-gradient(90deg, var(--blue1), var(--blue2));
-  z-index: 0;
-  transition: width 0.25s ease-out;
+  width: var(--fill,0%);
+  background: linear-gradient(90deg,var(--blue1),var(--blue2));
+  transition: width .25s ease-out;
 }
 
 .day.gray::before {
-  background: linear-gradient(90deg, var(--gray1), var(--gray2));
+  background: linear-gradient(90deg,var(--gray1),var(--gray2));
 }
 
-/* Content above fill */
 .day > * { position: relative; z-index: 1; }
 
-/* Borders */
 .day.green {
   border-color: #22c55e;
-  box-shadow:
-    0 0 0 1px rgba(34,197,94,0.6),
-    0 0 14px rgba(34,197,94,0.25);
+  box-shadow: 0 0 0 1px rgba(34,197,94,.6),
+              0 0 14px rgba(34,197,94,.25);
 }
-
 .day.yellow { border-color: #eab308; }
 .day.gray { border-color: #64748b; }
 
-/* Today pulse */
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(56,189,248,0.6); }
+  0% { box-shadow: 0 0 0 0 rgba(56,189,248,.6); }
   70% { box-shadow: 0 0 0 6px rgba(56,189,248,0); }
   100% { box-shadow: 0 0 0 0 rgba(56,189,248,0); }
 }
@@ -96,14 +80,9 @@ h2 {
   animation: pulse 1.5s ease-out 1;
 }
 
-/* Tile text */
-.day .pct {
-  font-size: 0.6rem;
-  opacity: 0.7;
-  margin-top: 2px;
-}
+.pct { font-size:.6rem; opacity:.7; }
 
-/* Modal */
+/* ====== Modal ====== */
 .modal {
   position: fixed;
   inset: 0;
@@ -112,8 +91,7 @@ h2 {
   align-items: center;
   justify-content: center;
 }
-
-.modal.open { display: flex; }
+.modal.open { display:flex; }
 
 .sheet {
   background: #020617;
@@ -123,42 +101,41 @@ h2 {
   padding: 16px;
 }
 
-label {
-  display: flex;
-  gap: 8px;
-  padding: 8px 0;
-}
+label { display:flex; gap:8px; padding:8px 0; }
 
-input[type="number"] {
-  width: 100%;
-  padding: 8px;
-  border-radius: 8px;
-  border: none;
-  margin-bottom: 12px;
+input[type=number], textarea {
+  width:100%;
+  border-radius:8px;
+  border:none;
+  padding:8px;
 }
 
 .progress {
-  height: 6px;
-  background: #111827;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 6px;
+  height:6px;
+  background:#111827;
+  border-radius:4px;
+  overflow:hidden;
 }
 
 .progress div {
-  height: 100%;
-  background: #22c55e;
-  transition: width .2s ease-out;
+  height:100%;
+  background:#22c55e;
+}
+
+.bulk {
+  margin-top: 14px;
+  border-top: 1px solid #1e293b;
+  padding-top: 12px;
 }
 
 button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 12px;
-  border: none;
-  border-radius: 999px;
-  background: #38bdf8;
-  cursor: pointer;
+  width:100%;
+  margin-top:12px;
+  padding:10px;
+  border:none;
+  border-radius:999px;
+  background:#38bdf8;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -173,17 +150,25 @@ button {
     <h3 id="modalDate"></h3>
 
     <label>Steps today</label>
-    <input type="number" id="stepInput" placeholder="e.g. 6500" />
-
+    <input type="number" id="stepInput" />
     <div class="progress"><div id="stepBar"></div></div>
-    <div id="stepPct" style="font-size:.75rem;opacity:.7"></div>
+    <div id="stepPct" style="font-size:.75rem;opacity:.7;"></div>
 
     <div id="checklist"></div>
+
+    <div class="bulk">
+      <strong style="font-size:.8rem">Bulk step paste</strong>
+      <textarea id="bulkInput"
+        placeholder="2026-04-01, 12345&#10;2026-04-02, 8450"></textarea>
+      <button onclick="applyBulkSteps()">Apply Entries</button>
+    </div>
+
     <button onclick="closeModal()">Done</button>
   </div>
 </div>
 
 <script>
+/* ====== Data ====== */
 var checklistItems = [
   "8000 Steps",
   "Less than 8000 Steps but played basketball",
@@ -200,157 +185,132 @@ var gymItems = checklistItems.slice(2,6);
 var restItem = checklistItems[6];
 
 var storageKey = "dailyChecklist";
+var saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
 var year = new Date().getFullYear();
 var todayKey = new Date().toISOString().slice(0,10);
-
-var saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
-
-var monthsEl = document.getElementById("months");
-var stepInput = document.getElementById("stepInput");
-var stepBar = document.getElementById("stepBar");
-var stepPct = document.getElementById("stepPct");
-
-var monthNames = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December"
-];
+var monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 document.getElementById("title").innerText = year + " Fitness Tracker";
 
-/* Helpers */
+/* ====== Helpers ====== */
+function getTruePct(steps){ return Math.round((steps/8000)*100); }
+function getFillPct(steps){ return Math.min(100,getTruePct(steps)); }
 
-function getTrueStepPct(steps) {
-  return Math.round((steps / 8000) * 100);
-}
+function getDayClass(key){
+  var d=saved[key]||{};
+  if(d[restItem]) return "gray";
 
-function getFillPct(steps) {
-  return Math.min(100, getTrueStepPct(steps));
-}
+  var steps=d.steps||0;
+  var steps12000=steps>=12000;
+  var steps8000=d[step8000];
 
-function getDayClass(key) {
-  var data = saved[key] || {};
-  if (data[restItem]) return "gray";
+  var gym=false;
+  for(var i=0;i<gymItems.length;i++) if(d[gymItems[i]]) gym=true;
 
-  var stepCount = data.steps || 0;
-  var steps12000 = stepCount >= 12000;
-  var steps8000 = data[step8000] === true;
-
-  var gymDone = false;
-  for (var i = 0; i < gymItems.length; i++) {
-    if (data[gymItems[i]]) { gymDone = true; break; }
-  }
-
-  if (steps12000 || (steps8000 && gymDone)) return "green";
-  if (steps8000 || stepCount > 0 || gymDone) return "yellow";
+  if(steps12000 || (steps8000 && gym)) return "green";
+  if(steps>0 || gym) return "yellow";
   return "";
 }
 
-/* Modal */
+/* ====== Modal ====== */
+function openModal(key){
+  var list=document.getElementById("checklist");
+  list.innerHTML="";
+  document.getElementById("modalDate").innerText=key;
 
-function openModal(dateKey) {
-  var list = document.getElementById("checklist");
-  document.getElementById("modalDate").innerText = dateKey;
-  list.innerHTML = "";
-
-  var steps = saved[dateKey] && saved[dateKey].steps || 0;
-  stepInput.value = steps || "";
+  var steps=saved[key]?.steps||0;
+  stepInput.value=steps||"";
   updateStepUI(steps);
 
-  stepInput.oninput = function() {
-    var val = parseInt(stepInput.value || 0, 10);
-    if (!saved[dateKey]) saved[dateKey] = {};
-    saved[dateKey].steps = val;
-
-    saved[dateKey][step8000] = val >= 8000;
-    saved[dateKey][stepUnder] = val > 0 && val < 8000;
-
-    localStorage.setItem(storageKey, JSON.stringify(saved));
-    updateStepUI(val);
-    render();
+  stepInput.oninput=function(){
+    var v=parseInt(stepInput.value||0,10);
+    saved[key]=saved[key]||{};
+    saved[key].steps=v;
+    saved[key][step8000]=v>=8000;
+    saved[key][stepUnder]=v>0 && v<8000;
+    saveAndRender();
   };
 
-  for (var i = 2; i < checklistItems.length; i++) {
-    var item = checklistItems[i];
-    var label = document.createElement("label");
-    var box = document.createElement("input");
-    box.type = "checkbox";
-    box.checked = saved[dateKey] && saved[dateKey][item];
-
-    box.onchange = (function(dateKey, item){
-      return function(e){
-        if (!saved[dateKey]) saved[dateKey] = {};
-        saved[dateKey][item] = e.target.checked;
-        localStorage.setItem(storageKey, JSON.stringify(saved));
-        render();
-      };
-    })(dateKey,item);
-
-    label.appendChild(box);
-    label.appendChild(document.createTextNode(item));
-    list.appendChild(label);
+  for(var i=2;i<checklistItems.length;i++){
+    var item=checklistItems[i];
+    var l=document.createElement("label");
+    var b=document.createElement("input");
+    b.type="checkbox";
+    b.checked=saved[key]?.[item];
+    b.onchange=function(k,it){return function(e){
+      saved[k]=saved[k]||{};
+      saved[k][it]=e.target.checked;
+      saveAndRender();
+    }}(key,item);
+    l.append(b,item);
+    list.append(l);
   }
 
-  document.getElementById("modal").className = "modal open";
+  modal.className="modal open";
 }
 
-function updateStepUI(steps) {
-  var pct = getTrueStepPct(steps);
-  stepBar.style.width = getFillPct(steps) + "%";
-  stepPct.innerText = pct + "% of 8000 steps";
+function updateStepUI(steps){
+  var pct=getTruePct(steps);
+  stepBar.style.width=getFillPct(steps)+"%";
+  stepPct.innerText=pct+"% of 8000 steps";
 }
 
-function closeModal() {
-  document.getElementById("modal").className = "modal";
+function closeModal(){ modal.className="modal"; }
+
+/* ====== Bulk Import ====== */
+function applyBulkSteps(){
+  var t=bulkInput.value.trim();
+  if(!t) return;
+  t.split(/\n+/).forEach(function(line){
+    var p=line.split(/[, ]+/);
+    if(p.length<2) return;
+    var k=p[0], s=parseInt(p[1],10);
+    if(isNaN(s)) return;
+    saved[k]=saved[k]||{};
+    saved[k].steps=s;
+    saved[k][step8000]=s>=8000;
+    saved[k][stepUnder]=s>0 && s<8000;
+  });
+  bulkInput.value="";
+  saveAndRender();
+  closeModal();
 }
 
-/* Render */
+/* ====== Render ====== */
+function saveAndRender(){
+  localStorage.setItem(storageKey,JSON.stringify(saved));
+  render();
+}
 
-function render() {
-  monthsEl.innerHTML = "";
+function render(){
+  months.innerHTML="";
+  for(var m=0;m<12;m++){
+    var md=document.createElement("div");
+    md.className="month";
+    md.innerHTML="<h2>"+monthNames[m]+"</h2>";
+    var g=document.createElement("div");
+    g.className="grid";
 
-  for (var m = 0; m < 12; m++) {
-    var monthDiv = document.createElement("div");
-    monthDiv.className = "month";
+    var d=new Date(year,m,1);
+    while(d.getMonth()===m){
+      var k=d.toISOString().slice(0,10);
+      var s=saved[k]?.steps||0;
+      var pct=s?getTruePct(s):"";
+      var cls=getDayClass(k);
 
-    var header = document.createElement("h2");
-    header.innerText = monthNames[m];
-    monthDiv.appendChild(header);
+      var day=document.createElement("div");
+      day.className="day "+cls+(k===todayKey?" today":"");
+      day.style.setProperty("--fill",getFillPct(s)+"%");
 
-    var grid = document.createElement("div");
-    grid.className = "grid";
+      var badge=cls==="green"?"🔥":cls==="yellow"?"⚡":cls==="gray"?"🛌":"";
+      day.innerHTML=d.getDate()+(badge?"<div>"+badge+"</div>":"")+(pct?"<div class='pct'>"+pct+"%</div>":"");
 
-    var d = new Date(year, m, 1);
-    while (d.getMonth() === m) {
-      var key = d.toISOString().slice(0,10);
-      var data = saved[key] || {};
-      var steps = data.steps || 0;
-      var pct = steps ? getTrueStepPct(steps) : "";
-
-      var day = document.createElement("div");
-      day.className = "day " + getDayClass(key);
-      day.style.setProperty("--fill", getFillPct(steps) + "%");
-      if (key === todayKey) day.className += " today";
-
-      var badge = "";
-      if (getDayClass(key) === "green") badge = "🔥";
-      else if (getDayClass(key) === "yellow") badge = "⚡";
-      else if (getDayClass(key) === "gray") badge = "🛌";
-
-      day.innerHTML =
-        d.getDate() +
-        (badge ? '<div>'+badge+'</div>' : '') +
-        (pct ? '<div class="pct">'+pct+'%</div>' : '');
-
-      day.onclick = (function(key){
-        return function(){ openModal(key); };
-      })(key);
-
-      grid.appendChild(day);
-      d.setDate(d.getDate() + 1);
+      day.onclick=function(k){return function(){openModal(k);}}(k);
+      g.append(day);
+      d.setDate(d.getDate()+1);
     }
-
-    monthDiv.appendChild(grid);
-    monthsEl.appendChild(monthDiv);
+    md.append(g);
+    months.append(md);
   }
 }
 
