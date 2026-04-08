@@ -35,6 +35,8 @@ h2 {
 }
 
 .day {
+  position: relative;
+  overflow: hidden;
   background: #020617;
   text-align: center;
   padding: 8px;
@@ -43,32 +45,27 @@ h2 {
   cursor: pointer;
   border: 1px solid #020617;
 }
-.day {
-  position: relative;
-  overflow: hidden;
-}
 
-/* Battery fill */
+/* battery fill */
 .day::before {
   content: "";
   position: absolute;
   inset: 0;
-  width: 0%;
-  background: rgba(56, 189, 248, 0.25); /* blue fill */
+  width: var(--fill, 0%);
+  background: rgba(56, 189, 248, 0.25);
   z-index: 0;
 }
 
-/* Grey fill for rest days */
 .day.gray::before {
   background: rgba(148, 163, 184, 0.25);
 }
 
-/* Content stays above the fill */
+/* content above fill */
 .day > * {
   position: relative;
   z-index: 1;
 }
-``
+
 .day.green { border-color: #22c55e; }
 .day.yellow { border-color: #eab308; }
 .day.gray { border-color: #64748b; }
@@ -78,12 +75,13 @@ h2 {
   outline-offset: -2px;
 }
 
-.day span {
-  display: block;
-  font-size: 0.65rem;
-  opacity: 0.6;
+.day .pct {
+  font-size: 0.6rem;
+  opacity: 0.65;
+  margin-top: 2px;
 }
 
+/* modal */
 .modal {
   position: fixed;
   inset: 0;
@@ -119,10 +117,10 @@ input[type="number"] {
 
 .progress {
   height: 6px;
-  background: #020617;
+  background: #111827;
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .progress div {
@@ -151,12 +149,10 @@ button {
   <div class="sheet">
     <h3 id="modalDate"></h3>
 
-    <label>
-      Steps today
-    </label>
+    <label>Steps today</label>
     <input type="number" id="stepInput" placeholder="e.g. 6500" />
     <div class="progress"><div id="stepBar"></div></div>
-    <div id="stepPct" style="font-size:.8rem;opacity:.7;margin-bottom:12px"></div>
+    <div id="stepPct" style="font-size:.75rem;opacity:.7;margin-bottom:10px"></div>
 
     <div id="checklist"></div>
     <button onclick="closeModal()">Done</button>
@@ -174,34 +170,63 @@ var checklistItems = [
   "Rest Day"
 ];
 
-var stepItems = checklistItems.slice(0,2);
+var step8000 = checklistItems[0];
+var stepUnder = checklistItems[1];
 var gymItems = checklistItems.slice(2,6);
-var restItem = "Rest Day";
+var restItem = checklistItems[6];
 
 var storageKey = "dailyChecklist";
 var year = new Date().getFullYear();
 var todayKey = new Date().toISOString().slice(0,10);
 
 var saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
 var monthsEl = document.getElementById("months");
 var stepInput = document.getElementById("stepInput");
 var stepBar = document.getElementById("stepBar");
 var stepPct = document.getElementById("stepPct");
 
+var monthNames = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
 
 document.getElementById("title").innerText = year + " Fitness Tracker";
 
-var monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function getStepPct(key) {
+  var steps = saved[key] && saved[key].steps;
+  if (!steps) return 0;
+  var pct = Math.round((steps / 8000) * 100);
+  if (pct < 0) pct = 0;
+  if (pct > 100) pct = 100;
+  return pct;
+}
+
+function getDayClass(key) {
+  var data = saved[key] || {};
+
+  if (data[restItem]) return "gray";
+
+  var steps100 = data[step8000] === true;
+  var stepsUnderFlag = data[stepUnder] === true;
+
+  var gymDone = false;
+  for (var j = 0; j < gymItems.length; j++) {
+    if (data[gymItems[j]]) { gymDone = true; break; }
+  }
+
+  if (steps100 && gymDone) return "green";
+  if (steps100 || gymDone || stepsUnderFlag) return "yellow";
+  return "";
+}
 
 function openModal(dateKey) {
-  var modal = document.getElementById("modal");
   var list = document.getElementById("checklist");
-
   document.getElementById("modalDate").innerText = dateKey;
   list.innerHTML = "";
 
   var steps = saved[dateKey] && saved[dateKey].steps || 0;
-  stepInput.value = steps ? steps : "";
+  stepInput.value = steps || "";
   updateStepUI(steps);
 
   stepInput.oninput = function() {
@@ -209,19 +234,16 @@ function openModal(dateKey) {
     if (!saved[dateKey]) saved[dateKey] = {};
     saved[dateKey].steps = val;
 
-    // auto-check step buckets
-    saved[dateKey][stepItems[0]] = val >= 8000;
-    saved[dateKey][stepItems[1]] = val > 0 && val < 8000;
+    saved[dateKey][step8000] = val >= 8000;
+    saved[dateKey][stepUnder] = val > 0 && val < 8000;
 
     localStorage.setItem(storageKey, JSON.stringify(saved));
     updateStepUI(val);
     render();
   };
 
-  for (var i = 0; i < checklistItems.length; i++) {
+  for (var i = 2; i < checklistItems.length; i++) {
     var item = checklistItems[i];
-    if (item === stepItems[0] || item === stepItems[1]) continue;
-
     var label = document.createElement("label");
     var box = document.createElement("input");
     box.type = "checkbox";
@@ -241,7 +263,7 @@ function openModal(dateKey) {
     list.appendChild(label);
   }
 
-  modal.className = "modal open";
+  document.getElementById("modal").className = "modal open";
 }
 
 function updateStepUI(steps) {
@@ -254,38 +276,6 @@ function closeModal() {
   document.getElementById("modal").className = "modal";
 }
 
-function getDayClass(key) {
-  var data = saved[key] || {};
-
-  // Rest day always wins
-  if (data[restItem]) return "gray";
-
-  // Steps logic
-  var steps100 = data[stepItems[0]] === true; // "8000 Steps"
-  var stepsUnder = data[stepItems[1]] === true; // Basketball under 8000
-
-  // Gym logic
-  var gymDone = false;
-  for (var j = 0; j < gymItems.length; j++) {
-    if (data[gymItems[j]]) {
-      gymDone = true;
-      break;
-    }
-  }
-
-  // Color rules
-  if (steps100 && gymDone) return "green";
-  if (steps100 || gymDone || stepsUnder) return "yellow";
-  return "";
-}
-function getStepFillPct(key) {
-  var steps = saved[key] && saved[key].steps;
-  if (!steps) return 0;
-  var pct = Math.round((steps / 8000) * 100);
-  if (pct < 0) pct = 0;
-  if (pct > 100) pct = 100;
-  return pct;
-}
 function render() {
   monthsEl.innerHTML = "";
 
@@ -303,16 +293,21 @@ function render() {
     var d = new Date(year, m, 1);
     while (d.getMonth() === m) {
       var key = d.toISOString().slice(0,10);
+      var pct = getStepPct(key);
+
       var day = document.createElement("div");
-      var fillPct = getStepFillPct(key);
-day.style.setProperty("--fill", fillPct + "%");
-day.style.setProperty("--fill", fillPct + "%");
-day.style.setProperty("--fill", fillPct + "%");
       day.className = "day " + getDayClass(key);
+      day.style.setProperty("--fill", pct + "%");
       if (key === todayKey) day.className += " today";
 
-      day.innerHTML = d.getDate();
-      day.onclick = (function(key){ return function(){ openModal(key); }; })(key);
+      day.innerHTML =
+        d.getDate() +
+        (pct ? '<div class="pct">' + pct + '%</div>' : '');
+
+      day.onclick = (function(key){
+        return function(){ openModal(key); };
+      })(key);
+
       grid.appendChild(day);
       d.setDate(d.getDate() + 1);
     }
@@ -324,5 +319,6 @@ day.style.setProperty("--fill", fillPct + "%");
 
 render();
 </script>
+
 </body>
 </html>
