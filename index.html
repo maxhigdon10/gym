@@ -1,90 +1,183 @@
-import { useState, useEffect } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Checklist</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #020617;
+      --accent: #38bdf8;
+      --muted: #64748b;
+      --text: #e5e7eb;
+    }
 
-export default function YearlyCalendarChecklist() {
-  const year = new Date().getFullYear();
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      margin: 16px;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      padding: 8px;
+    }
+
+    .day {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 6px 4px;
+      text-align: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border: 1px solid #020617;
+    }
+
+    .day.done {
+      border-color: var(--accent);
+    }
+
+    .day span {
+      display: block;
+      font-size: 0.6rem;
+      color: var(--muted);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .sheet {
+      background: var(--card);
+      width: 90%;
+      max-width: 400px;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 0;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--accent);
+      border: none;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 id="title"></h1>
+  <div class="calendar" id="calendar"></div>
+
+  <div class="modal" id="modal">
+    <div class="sheet">
+      <h2 id="modalDate"></h2>
+      <div id="checklist"></div>
+      <button onclick="closeModal()">Done</button>
+    </div>
+  </div>
+
+<script>
   const checklistItems = ["Workout", "Deep work", "Read", "Sleep 8h"];
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [data, setData] = useState({});
+  const year = new Date().getFullYear();
+  const storageKey = "dailyChecklist";
 
-  useEffect(() => {
-    const saved = localStorage.getItem("calendarChecklist");
-    if (saved) setData(JSON.parse(saved));
-  }, []);
+  document.getElementById("title").textContent = year + " Daily Checklist";
 
-  useEffect(() => {
-    localStorage.setItem("calendarChecklist", JSON.stringify(data));
-  }, [data]);
+  const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+  const calendar = document.getElementById("calendar");
 
-  function getDaysInYear(y) {
+  function daysInYear(y) {
+    const d = new Date(y, 0, 1);
     const days = [];
-    const date = new Date(y, 0, 1);
-    while (date.getFullYear() === y) {
-      days.push(new Date(date));
-      date.setDate(date.getDate() + 1);
+    while (d.getFullYear() === y) {
+      days.push(new Date(d));
+      d.setDate(d.getDate() + 1);
     }
     return days;
   }
 
-  function toggleItem(dateKey, item) {
-    setData(prev => {
-      const day = prev[dateKey] || {};
-      return {
-        ...prev,
-        [dateKey]: { ...day, [item]: !day[item] }
+  function openModal(dateKey) {
+    const modal = document.getElementById("modal");
+    const list = document.getElementById("checklist");
+    document.getElementById("modalDate").textContent = dateKey;
+    list.innerHTML = "";
+
+    checklistItems.forEach(item => {
+      const id = dateKey + item;
+      const value = saved[dateKey]?.[item];
+
+      const label = document.createElement("label");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = !!value;
+      box.onchange = () => {
+        saved[dateKey] = saved[dateKey] || {};
+        saved[dateKey][item] = box.checked;
+        localStorage.setItem(storageKey, JSON.stringify(saved));
+        render();
       };
+
+      label.appendChild(box);
+      label.appendChild(document.createTextNode(item));
+      list.appendChild(label);
+    });
+
+    modal.classList.add("open");
+  }
+
+  function closeModal() {
+    document.getElementById("modal").classList.remove("open");
+  }
+
+  function render() {
+    calendar.innerHTML = "";
+    daysInYear(year).forEach(d => {
+      const key = d.toISOString().slice(0,10);
+      const completed = saved[key]
+        ? Object.values(saved[key]).filter(Boolean).length
+        : 0;
+
+      const div = document.createElement("div");
+      div.className = "day" + (completed === checklistItems.length ? " done" : "");
+      div.innerHTML = d.getDate() + `<span>${completed}/${checklistItems.length}</span>`;
+      div.onclick = () => openModal(key);
+      calendar.appendChild(div);
     });
   }
 
-  const days = getDaysInYear(year);
+  render();
+</script>
 
-  return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-4">{year} Daily Checklist</h1>
-
-      <div className="grid grid-cols-7 gap-2 text-sm">
-        {days.map(d => {
-          const key = d.toISOString().slice(0,10);
-          const completed = data[key]
-            ? Object.values(data[key]).filter(Boolean).length
-            : 0;
-
-          return (
-            <button
-              key={key}
-              onClick={() => setSelectedDate(key)}
-              className="border rounded-2xl p-2 hover:bg-gray-100"
-            >
-              <div className="font-semibold">{d.getDate()}</div>
-              <div className="text-xs opacity-60">{completed}/{checklistItems.length}</div>
-            </button>
-          );
-        })}
-      </div>
-
-      {selectedDate && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-            <h2 className="font-bold mb-3">{selectedDate}</h2>
-            {checklistItems.map(item => (
-              <label key={item} className="block mb-2">
-                <input
-                  type="checkbox"
-                  className="mr-2"
-                  checked={!!data[selectedDate]?.[item]}
-                  onChange={() => toggleItem(selectedDate, item)}
-                />
-                {item}
-              </label>
-            ))}
-            <button
-              onClick={() => setSelectedDate(null)}
-              className="mt-4 px-4 py-2 rounded-2xl bg-black text-white"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+</body>
+</html>
