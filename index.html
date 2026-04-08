@@ -205,18 +205,36 @@ function getStepPct(key) {
 function getDayClass(key) {
   var data = saved[key] || {};
 
+  // Rest day always wins
   if (data[restItem]) return "gray";
 
-  var steps100 = data[step8000] === true;
-  var stepsUnderFlag = data[stepUnder] === true;
+  // Step flags
+  var steps100 = data[step8000] === true;     // ≥ 8000
+  var stepsUnder = data[stepUnder] === true; // 1–7999
 
+  // Read raw step count for 12k rule
+  var stepCount = data.steps || 0;
+  var steps12000 = stepCount >= 12000;
+
+  // Gym logic
   var gymDone = false;
   for (var j = 0; j < gymItems.length; j++) {
-    if (data[gymItems[j]]) { gymDone = true; break; }
+    if (data[gymItems[j]]) {
+      gymDone = true;
+      break;
+    }
   }
 
-  if (steps100 && gymDone) return "green";
-  if (steps100 || gymDone || stepsUnderFlag) return "yellow";
+  // ✅ NEW GREEN CONDITIONS
+  if (steps12000 || (steps100 && gymDone)) {
+    return "green";
+  }
+
+  // Yellow if any meaningful effort
+  if (steps100 || stepsUnder || gymDone) {
+    return "yellow";
+  }
+
   return "";
 }
 
