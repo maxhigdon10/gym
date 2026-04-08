@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Calendar Test</title>
+<title>Daily Checklist</title>
 
 <style>
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
   background: #0f172a;
-  color: white;
+  color: #e5e7eb;
 }
 
 h1 {
@@ -39,10 +39,61 @@ h2 {
   text-align: center;
   padding: 8px;
   border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border: 1px solid #020617;
 }
 
-.today {
+.day.done {
+  border-color: #38bdf8;
+}
+
+.day.today {
   outline: 2px solid #22c55e;
+  outline-offset: -2px;
+}
+
+.day span {
+  display: block;
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.open {
+  display: flex;
+}
+
+.sheet {
+  background: #020617;
+  width: 92%;
+  max-width: 400px;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+label {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 999px;
+  background: #38bdf8;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -52,47 +103,113 @@ h2 {
 <h1 id="title"></h1>
 <div id="months"></div>
 
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h3 id="modalDate"></h3>
+    <div id="checklist"></div>
+    <button onclick="closeModal()">Done</button>
+  </div>
+</div>
+
 <script>
+var checklistItems = ["Workout", "Deep work", "Read", "Sleep 8h"];
+var storageKey = "dailyChecklist";
 var year = new Date().getFullYear();
-var today = new Date().toISOString().slice(0,10);
+var todayKey = new Date().toISOString().slice(0,10);
 
-document.getElementById("title").innerText = year + " Calendar";
+document.getElementById("title").innerText = year + " Daily Checklist";
 
-var months = [
+var saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+var monthsEl = document.getElementById("months");
+
+var monthNames = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December"
 ];
 
-var container = document.getElementById("months");
+function openModal(dateKey) {
+  var modal = document.getElementById("modal");
+  var list = document.getElementById("checklist");
+  document.getElementById("modalDate").innerText = dateKey;
+  list.innerHTML = "";
 
-for (var m = 0; m < 12; m++) {
-  var monthDiv = document.createElement("div");
-  monthDiv.className = "month";
+  for (var i = 0; i < checklistItems.length; i++) {
+    var item = checklistItems[i];
+    var label = document.createElement("label");
+    var box = document.createElement("input");
+    box.type = "checkbox";
 
-  var header = document.createElement("h2");
-  header.innerText = months[m];
-  monthDiv.appendChild(header);
+    if (saved[dateKey] && saved[dateKey][item]) {
+      box.checked = true;
+    }
 
-  var grid = document.createElement("div");
-  grid.className = "grid";
+    box.onchange = (function(dateKey, item) {
+      return function(e) {
+        if (!saved[dateKey]) saved[dateKey] = {};
+        saved[dateKey][item] = e.target.checked;
+        localStorage.setItem(storageKey, JSON.stringify(saved));
+        render();
+      };
+    })(dateKey, item);
 
-  var d = new Date(year, m, 1);
-  while (d.getMonth() === m) {
-    var key = d.toISOString().slice(0,10);
-
-    var day = document.createElement("div");
-    day.className = "day";
-    if (key === today) day.className += " today";
-
-    day.innerText = d.getDate();
-    grid.appendChild(day);
-
-    d.setDate(d.getDate() + 1);
+    label.appendChild(box);
+    label.appendChild(document.createTextNode(item));
+    list.appendChild(label);
   }
 
-  monthDiv.appendChild(grid);
-  container.appendChild(monthDiv);
+  modal.className = "modal open";
 }
+
+function closeModal() {
+  document.getElementById("modal").className = "modal";
+}
+
+function render() {
+  monthsEl.innerHTML = "";
+
+  for (var m = 0; m < 12; m++) {
+    var monthDiv = document.createElement("div");
+    monthDiv.className = "month";
+
+    var header = document.createElement("h2");
+    header.innerText = monthNames[m];
+    monthDiv.appendChild(header);
+
+    var grid = document.createElement("div");
+    grid.className = "grid";
+
+    var d = new Date(year, m, 1);
+    while (d.getMonth() === m) {
+      var key = d.toISOString().slice(0,10);
+      var completed = 0;
+
+      if (saved[key]) {
+        for (var k in saved[key]) {
+          if (saved[key][k]) completed++;
+        }
+      }
+
+      var day = document.createElement("div");
+      day.className = "day";
+      if (completed === checklistItems.length) day.className += " done";
+      if (key === todayKey) day.className += " today";
+
+      day.innerHTML = d.getDate() +
+        "<span>" + completed + "/" + checklistItems.length + "</span>";
+      day.onclick = (function(key) {
+        return function() { openModal(key); };
+      })(key);
+
+      grid.appendChild(day);
+      d.setDate(d.getDate() + 1);
+    }
+
+    monthDiv.appendChild(grid);
+    monthsEl.appendChild(monthDiv);
+  }
+}
+
+render();
 </script>
 
 </body>
