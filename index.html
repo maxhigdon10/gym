@@ -43,7 +43,32 @@ h2 {
   cursor: pointer;
   border: 1px solid #020617;
 }
+.day {
+  position: relative;
+  overflow: hidden;
+}
 
+/* Battery fill */
+.day::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: rgba(56, 189, 248, 0.25); /* blue fill */
+  z-index: 0;
+}
+
+/* Grey fill for rest days */
+.day.gray::before {
+  background: rgba(148, 163, 184, 0.25);
+}
+
+/* Content stays above the fill */
+.day > * {
+  position: relative;
+  z-index: 1;
+}
+``
 .day.green { border-color: #22c55e; }
 .day.yellow { border-color: #eab308; }
 .day.gray { border-color: #64748b; }
@@ -253,7 +278,14 @@ function getDayClass(key) {
   if (steps100 || gymDone || stepsUnder) return "yellow";
   return "";
 }
-
+function getStepFillPct(key) {
+  var steps = saved[key] && saved[key].steps;
+  if (!steps) return 0;
+  var pct = Math.round((steps / 8000) * 100);
+  if (pct < 0) pct = 0;
+  if (pct > 100) pct = 100;
+  return pct;
+}
 function render() {
   monthsEl.innerHTML = "";
 
@@ -272,6 +304,10 @@ function render() {
     while (d.getMonth() === m) {
       var key = d.toISOString().slice(0,10);
       var day = document.createElement("div");
+      var fillPct = getStepFillPct(key);
+day.style.setProperty("--fill", fillPct + "%");
+day.style.setProperty("--fill", fillPct + "%");
+day.style.setProperty("--fill", fillPct + "%");
       day.className = "day " + getDayClass(key);
       if (key === todayKey) day.className += " today";
 
