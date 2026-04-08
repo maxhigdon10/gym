@@ -196,7 +196,7 @@ document.getElementById("title").innerText = year + " Fitness Tracker";
 function getStepPct(key) {
   var steps = saved[key] && saved[key].steps;
   if (!steps) return "";
-  return Math.round((steps / 8000) * 100) + "%";
+  return Math.round((steps / 8000) * 100);
 }
 
 function getDayClass(key) {
