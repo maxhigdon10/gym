@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Daily Checklist</title>
+<title>Daily Fitness Checklist</title>
 
 <style>
 body {
@@ -44,12 +44,12 @@ h2 {
   border: 1px solid #020617;
 }
 
-.day.done {
-  border-color: #38bdf8;
-}
+.day.green { border-color: #22c55e; }
+.day.yellow { border-color: #eab308; }
+.day.gray { border-color: #64748b; }
 
 .day.today {
-  outline: 2px solid #22c55e;
+  outline: 2px solid #38bdf8;
   outline-offset: -2px;
 }
 
@@ -68,14 +68,12 @@ h2 {
   justify-content: center;
 }
 
-.modal.open {
-  display: flex;
-}
+.modal.open { display: flex; }
 
 .sheet {
   background: #020617;
   width: 92%;
-  max-width: 400px;
+  max-width: 420px;
   border-radius: 16px;
   padding: 16px;
 }
@@ -112,20 +110,30 @@ button {
 </div>
 
 <script>
-var checklistItems = ["8000 Steps", "Less than 8000 Steps but played basketball", "Gym: Chest/Triceps", "Gym: Back/Biceps", "Gym: Legs", "Gym: Shoulders", "Rest Day"];
+var checklistItems = [
+  "8000 Steps",
+  "Less than 8000 Steps but played basketball",
+  "Gym: Chest/Triceps",
+  "Gym: Back/Biceps",
+  "Gym: Legs",
+  "Gym: Shoulders",
+  "Rest Day"
+];
+
+var stepItems = checklistItems.slice(0,2);
+var gymItems = checklistItems.slice(2,6);
+var restItem = "Rest Day";
+
 var storageKey = "dailyChecklist";
 var year = new Date().getFullYear();
 var todayKey = new Date().toISOString().slice(0,10);
 
-document.getElementById("title").innerText = year + " Daily Checklist";
-
 var saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
 var monthsEl = document.getElementById("months");
 
-var monthNames = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December"
-];
+document.getElementById("title").innerText = year + " Fitness Tracker";
+
+var monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 function openModal(dateKey) {
   var modal = document.getElementById("modal");
@@ -138,10 +146,7 @@ function openModal(dateKey) {
     var label = document.createElement("label");
     var box = document.createElement("input");
     box.type = "checkbox";
-
-    if (saved[dateKey] && saved[dateKey][item]) {
-      box.checked = true;
-    }
+    box.checked = saved[dateKey] && saved[dateKey][item];
 
     box.onchange = (function(dateKey, item) {
       return function(e) {
@@ -156,12 +161,27 @@ function openModal(dateKey) {
     label.appendChild(document.createTextNode(item));
     list.appendChild(label);
   }
-
   modal.className = "modal open";
 }
 
 function closeModal() {
   document.getElementById("modal").className = "modal";
+}
+
+function getDayClass(key) {
+  var data = saved[key] || {};
+
+  if (data[restItem]) return "gray";
+
+  var stepsDone = false;
+  for (var i = 0; i < stepItems.length; i++) if (data[stepItems[i]]) stepsDone = true;
+
+  var gymDone = false;
+  for (var j = 0; j < gymItems.length; j++) if (data[gymItems[j]]) gymDone = true;
+
+  if (stepsDone && gymDone) return "green";
+  if (stepsDone || gymDone) return "yellow";
+  return "";
 }
 
 function render() {
@@ -181,25 +201,12 @@ function render() {
     var d = new Date(year, m, 1);
     while (d.getMonth() === m) {
       var key = d.toISOString().slice(0,10);
-      var completed = 0;
-
-      if (saved[key]) {
-        for (var k in saved[key]) {
-          if (saved[key][k]) completed++;
-        }
-      }
-
       var day = document.createElement("div");
-      day.className = "day";
-      if (completed === checklistItems.length) day.className += " done";
+      day.className = "day " + getDayClass(key);
       if (key === todayKey) day.className += " today";
 
-      day.innerHTML = d.getDate() +
-        "<span>" + completed + "/" + checklistItems.length + "</span>";
-      day.onclick = (function(key) {
-        return function() { openModal(key); };
-      })(key);
-
+      day.innerHTML = d.getDate();
+      day.onclick = (function(key){ return function(){ openModal(key); }; })(key);
       grid.appendChild(day);
       d.setDate(d.getDate() + 1);
     }
@@ -211,6 +218,5 @@ function render() {
 
 render();
 </script>
-
 </body>
 </html>
