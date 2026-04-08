@@ -1,6 +1,99 @@
 <!DOCTYPE html>
-<html>
-  <body>
-    <h1>It works</h1>
-  </body>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calendar Test</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: white;
+}
+
+h1 {
+  margin: 16px;
+}
+
+.month {
+  margin-bottom: 24px;
+}
+
+h2 {
+  margin: 8px 16px;
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding: 8px;
+}
+
+.day {
+  background: #020617;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.today {
+  outline: 2px solid #22c55e;
+}
+</style>
+</head>
+
+<body>
+
+<h1 id="title"></h1>
+<div id="months"></div>
+
+<script>
+var year = new Date().getFullYear();
+var today = new Date().toISOString().slice(0,10);
+
+document.getElementById("title").innerText = year + " Calendar";
+
+var months = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
+
+var container = document.getElementById("months");
+
+for (var m = 0; m < 12; m++) {
+  var monthDiv = document.createElement("div");
+  monthDiv.className = "month";
+
+  var header = document.createElement("h2");
+  header.innerText = months[m];
+  monthDiv.appendChild(header);
+
+  var grid = document.createElement("div");
+  grid.className = "grid";
+
+  var d = new Date(year, m, 1);
+  while (d.getMonth() === m) {
+    var key = d.toISOString().slice(0,10);
+
+    var day = document.createElement("div");
+    day.className = "day";
+    if (key === today) day.className += " today";
+
+    day.innerText = d.getDate();
+    grid.appendChild(day);
+
+    d.setDate(d.getDate() + 1);
+  }
+
+  monthDiv.appendChild(grid);
+  container.appendChild(monthDiv);
+}
+</script>
+
+</body>
 </html>
