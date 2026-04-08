@@ -240,8 +240,8 @@ function getDayClass(key) {
   var gymDone = false;
   for (var j = 0; j < gymItems.length; j++) if (data[gymItems[j]]) gymDone = true;
 
-  if (stepsDone && gymDone) return "green";
-  if (stepsDone || gymDone) return "yellow";
+  if (steps100 && gymDone) return "green";
+  if (steps100 || gymDone || data[stepUnder]) return "yellow";;
   return "";
 }
 
