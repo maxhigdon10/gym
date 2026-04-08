@@ -1,268 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Daily Checklist</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card: #020617;
-      --accent: #38bdf8;
-      --text: #e5e7eb;
-      --today: #22c55e;
-      --today: #22c55e;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily Checklist</title>
 
-    * { box-sizing: border-box; }
+<style>
+:root {
+  --bg: #0f172a;
+  --card: #020617;
+  --accent: #38bdf8;
+  --muted: #94a3b8;
+  --text: #e5e7eb;
+  --today: #22c55e;
+}
 
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
+* { box-sizing: border-box; }
 
-    h1 {
-      margin: 16px;
-    }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
 
-    .month {
-      margin-bottom: 24px;
-    }
+h1 {
+  margin: 16px;
+  font-size: 1.4rem;
+}
 
+.month {
+  margin-bottom: 24px;
+}
 
-    .month h2 {
-      margin: 8px 16px;
-      font-size: 1rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
+.month h2 {
+  margin: 8px 16px;
+  font-size: 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding: 8px 12px;
+}
 
-    .month {
-      margin-bottom: 24px;
-    }
+.day {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border: 1px solid #020617;
+}
 
+.day.done {
+  border-color: var(--accent);
+}
 
-    .month h2 {
-      margin: 8px 16px;
-      font-size: 1rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
+.day.today {
+  outline: 2px solid var(--today);
+  outline-offset: -2px;
+}
 
+.day span {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.65rem;
+  color: var(--muted);
+}
 
-    .calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-    }
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
 
-    .day {
-      background: var(--card);
-      text-align: center;
-      cursor: pointer;
-      border: 1px solid #020617;
-    }
+.modal.open {
+  display: flex;
+}
 
-    .day.done {
-      border-color: var(--accent);
-    }
+.sheet {
+  background: var(--card);
+  width: 92%;
+  max-width: 420px;
+  border-radius: 20px;
+  padding: 18px;
+}
 
-    .day.today {
-      outline: 2px solid var(--today);
-      outline-offset: -2px;
-    }
+.sheet h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
 
+label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+}
 
-    .day.today {
-      outline: 2px solid var(--today);
-      outline-offset: -2px;
-    }
-
-
-    .day span {
-      display: block;
-      color: var(--muted);
-      margin-top: 2px;
-      margin-top: 2px;
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal.open {
-      display: flex;
-    }
-
-    .sheet {
-      background: var(--card);
-    }
-
-    .sheet h3 {
-      margin-top: 0;
-      margin-bottom: 12px;
-    }
-
-
-    .sheet h3 {
-      margin-top: 0;
-      margin-bottom: 12px;
-    }
-
-
-    label {
-      display: flex;
-      align-items: center;
-    }
-
-    button {
-      width: 100%;
-      background: var(--accent);
-      border: none;
-      border-radius: 999px;
-      cursor: pointer;
-    }
-  </style>
+button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+</style>
 </head>
+
 <body>
 
-  <h1 id="title"></h1>
+<h1 id="title"></h1>
+<div id="months"></div>
 
-  <div class="modal" id="modal">
-    <div class="sheet">
-      <div id="checklist"></div>
-      <button onclick="closeModal()">Done</button>
-    </div>
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h3 id="modalDate"></h3>
+    <div id="checklist"></div>
+    <button onclick="closeModal()">Done</button>
   </div>
+</div>
 
 <script>
-  const checklistItems = ["8000 Steps", "Less than 8000 Steps but played basketball", "Gym: Chest/Triceps", "Gym: Back/Biceps", "Gym: Legs", "Gym: Shoulders", "Rest Day"];
-  const year = new Date().getFullYear();
-  const todayKey = new Date().toISOString().slice(0,10);
-  const todayKey = new Date().toISOString().slice(0,10);
-  const storageKey = "dailyChecklist";
+const checklistItems = ["Workout", "Deep work", "Read", "Sleep 8h"];
+const year = new Date().getFullYear();
+const todayKey = new Date().toISOString().slice(0,10);
+const storageKey = "dailyChecklist";
 
-  document.getElementById("title").textContent = year + " Daily Checklist";
+const monthsEl = document.getElementById("months");
+const titleEl = document.getElementById("title");
+const modal = document.getElementById("modal");
+const checklistEl = document.getElementById("checklist");
+const modalDateEl = document.getElementById("modalDate");
 
-  const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
 
+const monthNames = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
 
-  function openModal(dateKey) {
-    const modal = document.getElementById("modal");
-    const list = document.getElementById("checklist");
-    document.getElementById("modalDate").textContent = dateKey;
-    list.innerHTML = "";
+titleEl.textContent = `${year} Daily Checklist`;
 
-    checklistItems.forEach(item => {
-      const value = saved[dateKey]?.[item];
-      const label = document.createElement("label");
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      box.checked = !!value;
-      box.onchange = () => {
-        saved[dateKey] = saved[dateKey] || {};
-        saved[dateKey][item] = box.checked;
-        localStorage.setItem(storageKey, JSON.stringify(saved));
-        render();
-      };
+function openModal(dateKey) {
+  modalDateEl.textContent = dateKey;
+  checklistEl.innerHTML = "";
 
-      label.appendChild(box);
-      label.appendChild(document.createTextNode(item));
-      list.appendChild(label);
-    });
+  checklistItems.forEach(item => {
+    const label = document.createElement("label");
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = !!saved[dateKey]?.[item];
 
-    modal.classList.add("open");
-  }
+    box.onchange = () => {
+      saved[dateKey] ??= {};
+      saved[dateKey][item] = box.checked;
+      localStorage.setItem(storageKey, JSON.stringify(saved));
+      render();
+    };
 
-  function closeModal() {
-    document.getElementById("modal").classList.remove("open");
-  }
+    label.append(box, item);
+    checklistEl.appendChild(label);
+  });
 
-  function render() {
-    monthsEl.innerHTML = "";
-      const monthDiv = document.createElement("div");      monthDiv.className = "month";
-      const header = document.createElement("h2");    for (let month = 0; month < 12; month++) {      const monthDiv = document.createElement("div");      monthDiv.className = "month";
-      const header = document.createElement("h2");
-      header.textContent = monthNames[month];
-      monthDiv.appendChild(header);
+  modal.classList.add("open");
+}
 
+function closeModal() {
+  modal.classList.remove("open");
+}
 
-      const grid = document.createElement("div");
-      grid.className = "calendar";
+function render() {
+  monthsEl.innerHTML = "";
 
+  for (let m = 0; m < 12; m++) {
+    const monthDiv = document.createElement("div");
+    monthDiv.className = "month";
 
-      const date = new Date(year, month, 1);
-      while (date.getMonth() === month) {
-        const key = date.toISOString().slice(0,10);
-        const completed = saved[key]
-          ? Object.values(saved[key]).filter(Boolean).length
-          : 0;
+    const header = document.createElement("h2");
+    header.textContent = monthNames[m];
+    monthDiv.appendChild(header);
 
+    const grid = document.createElement("div");
+    grid.className = "calendar";
 
-        const div = document.createElement("div");
-        div.className = "day";
-        if (completed === checklistItems.length) div.classList.add("done");
-        if (key === todayKey) div.classList.add("today");
+    let date = new Date(year, m, 1);
+    while (date.getMonth() === m) {
+      const key = date.toISOString().slice(0,10);
+      const completed = Object.values(saved[key] || {}).filter(Boolean).length;
 
+      const day = document.createElement("div");
+      day.className = "day";
+      if (completed === checklistItems.length) day.classList.add("done");
+      if (key === todayKey) day.classList.add("today");
 
-        div.innerHTML = date.getDate() + `<span>${completed}/${checklistItems.length}</span>`;
-        div.onclick = () => openModal(key);
-        grid.appendChild(div);
+      day.innerHTML = `${date.getDate()}<span>${completed}/${checklistItems.length}</span>`;
+      day.onclick = () => openModal(key);
 
-
-        date.setDate(date.getDate() + 1);
-      }
-
-
-      monthDiv.appendChild(grid);
-      monthsEl.appendChild(monthDiv);
-    }
-      header.textContent = monthNames[month];
-      monthDiv.appendChild(header);
-
-
-      const grid = document.createElement("div");
-      grid.className = "calendar";
-
-
-      const date = new Date(year, month, 1);
-      while (date.getMonth() === month) {
-        const key = date.toISOString().slice(0,10);
-        const completed = saved[key]
-          ? Object.values(saved[key]).filter(Boolean).length
-          : 0;
-
-
-        const div = document.createElement("div");
-        div.className = "day";
-        if (completed === checklistItems.length) div.classList.add("done");
-        if (key === todayKey) div.classList.add("today");
-
-
-        div.innerHTML = date.getDate() + `<span>${completed}/${checklistItems.length}</span>`;
-        div.onclick = () => openModal(key);
-        grid.appendChild(div);
-
-
-        date.setDate(date.getDate() + 1);
-      }
-
-
-      monthDiv.appendChild(grid);
-      monthsEl.appendChild(monthDiv);
-    }
-  }
-
-  render();
-</script>
-
-</body>
+      grid.appendChild(day);
