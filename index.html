@@ -232,16 +232,25 @@ function closeModal() {
 function getDayClass(key) {
   var data = saved[key] || {};
 
+  // Rest day always wins
   if (data[restItem]) return "gray";
 
-  var stepsDone = false;
-  for (var i = 0; i < stepItems.length; i++) if (data[stepItems[i]]) stepsDone = true;
+  // Steps logic
+  var steps100 = data[stepItems[0]] === true; // "8000 Steps"
+  var stepsUnder = data[stepItems[1]] === true; // Basketball under 8000
 
+  // Gym logic
   var gymDone = false;
-  for (var j = 0; j < gymItems.length; j++) if (data[gymItems[j]]) gymDone = true;
+  for (var j = 0; j < gymItems.length; j++) {
+    if (data[gymItems[j]]) {
+      gymDone = true;
+      break;
+    }
+  }
 
+  // Color rules
   if (steps100 && gymDone) return "green";
-  if (steps100 || gymDone || data[stepUnder]) return "yellow";;
+  if (steps100 || gymDone || stepsUnder) return "yellow";
   return "";
 }
 
