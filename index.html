@@ -84,6 +84,27 @@ label {
   padding: 8px 0;
 }
 
+input[type="number"] {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  margin-bottom: 12px;
+}
+
+.progress {
+  height: 6px;
+  background: #020617;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress div {
+  height: 100%;
+  background: #22c55e;
+}
+
 button {
   width: 100%;
   padding: 10px;
@@ -104,6 +125,14 @@ button {
 <div class="modal" id="modal">
   <div class="sheet">
     <h3 id="modalDate"></h3>
+
+    <label>
+      Steps today
+    </label>
+    <input type="number" id="stepInput" placeholder="e.g. 6500" />
+    <div class="progress"><div id="stepBar"></div></div>
+    <div id="stepPct" style="font-size:.8rem;opacity:.7;margin-bottom:12px"></div>
+
     <div id="checklist"></div>
     <button onclick="closeModal()">Done</button>
   </div>
@@ -130,6 +159,10 @@ var todayKey = new Date().toISOString().slice(0,10);
 
 var saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
 var monthsEl = document.getElementById("months");
+var stepInput = document.getElementById("stepInput");
+var stepBar = document.getElementById("stepBar");
+var stepPct = document.getElementById("stepPct");
+
 
 document.getElementById("title").innerText = year + " Fitness Tracker";
 
@@ -138,11 +171,32 @@ var monthNames = ["January","February","March","April","May","June","July","Augu
 function openModal(dateKey) {
   var modal = document.getElementById("modal");
   var list = document.getElementById("checklist");
+
   document.getElementById("modalDate").innerText = dateKey;
   list.innerHTML = "";
 
+  var steps = saved[dateKey] && saved[dateKey].steps || 0;
+  stepInput.value = steps ? steps : "";
+  updateStepUI(steps);
+
+  stepInput.oninput = function() {
+    var val = parseInt(stepInput.value || 0, 10);
+    if (!saved[dateKey]) saved[dateKey] = {};
+    saved[dateKey].steps = val;
+
+    // auto-check step buckets
+    saved[dateKey][stepItems[0]] = val >= 8000;
+    saved[dateKey][stepItems[1]] = val > 0 && val < 8000;
+
+    localStorage.setItem(storageKey, JSON.stringify(saved));
+    updateStepUI(val);
+    render();
+  };
+
   for (var i = 0; i < checklistItems.length; i++) {
     var item = checklistItems[i];
+    if (item === stepItems[0] || item === stepItems[1]) continue;
+
     var label = document.createElement("label");
     var box = document.createElement("input");
     box.type = "checkbox";
@@ -161,7 +215,14 @@ function openModal(dateKey) {
     label.appendChild(document.createTextNode(item));
     list.appendChild(label);
   }
+
   modal.className = "modal open";
+}
+
+function updateStepUI(steps) {
+  var pct = Math.min(100, Math.round((steps / 8000) * 100));
+  stepBar.style.width = pct + "%";
+  stepPct.innerText = pct + "% of 8000 steps";
 }
 
 function closeModal() {
