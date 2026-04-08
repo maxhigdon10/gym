@@ -9,8 +9,8 @@
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
-  background: #0f172a;
-  color: #e5e7eb;
+  background: #022c22; /* deep green-teal */
+  color: #ecfeff;
 }
 
 h1 {
@@ -35,27 +35,34 @@ h2 {
 }
 
 .day {
-  position: relative;
-  overflow: hidden;
-  background: #020617;
+  background: #064e3b;
   text-align: center;
   padding: 10px 6px;
   border-radius: 8px;
   font-size: 0.8rem;
   cursor: pointer;
-  border: 1px solid #020617;
+  border: 1px solid #064e3b;
 }
 
 .day.today {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid #34d399;
   outline-offset: -2px;
 }
 
 .day .weight {
   font-size: 0.65rem;
-  opacity: 0.7;
+  opacity: 0.8;
   margin-top: 2px;
 }
+
+.day .trend {
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.trend.up { color: #f87171; }
+.trend.down { color: #34d399; }
+.trend.same { color: #fde68a; }
 
 /* modal */
 .modal {
@@ -70,7 +77,7 @@ h2 {
 .modal.open { display: flex; }
 
 .sheet {
-  background: #020617;
+  background: #064e3b;
   width: 92%;
   max-width: 400px;
   border-radius: 16px;
@@ -91,7 +98,7 @@ button {
   padding: 12px;
   border: none;
   border-radius: 999px;
-  background: #38bdf8;
+  background: #34d399;
   cursor: pointer;
 }
 
@@ -102,7 +109,7 @@ button {
 }
 
 .nav a {
-  color: #38bdf8;
+  color: #5eead4;
   text-decoration: none;
 }
 </style>
@@ -119,7 +126,7 @@ button {
     <input
       type="number"
       id="weightInput"
-      placeholder="Enter weight (lbs)"
+      placeholder="Enter weight"
       step="0.1"
     />
     <button onclick="closeModal()">Done</button>
@@ -127,7 +134,7 @@ button {
 </div>
 
 <div class="nav">
-  <a href="index.html">← Back to Fitness Tracker</a>
+  <a href="index.html">← Back to Fitness Checklist</a>
 </div>
 
 <script>
@@ -146,17 +153,31 @@ var monthNames = [
 
 document.getElementById("title").innerText = year + " Weight Tracker";
 
+function getPreviousWeight(dateKey) {
+  var keys = Object.keys(saved).sort();
+  for (var i = keys.length - 1; i >= 0; i--) {
+    if (keys[i] < dateKey) return saved[keys[i]];
+  }
+  return null;
+}
+
+function getTrend(dateKey) {
+  var current = saved[dateKey];
+  var prev = getPreviousWeight(dateKey);
+  if (prev === null || current === null) return "";
+  if (current > prev) return "up";
+  if (current < prev) return "down";
+  return "same";
+}
+
 function openModal(dateKey) {
   document.getElementById("modalDate").innerText = dateKey;
   weightInput.value = saved[dateKey] || "";
-  
+
   weightInput.oninput = function() {
     var val = parseFloat(weightInput.value);
-    if (!isNaN(val)) {
-      saved[dateKey] = val;
-    } else {
-      delete saved[dateKey];
-    }
+    if (!isNaN(val)) saved[dateKey] = val;
+    else delete saved[dateKey];
     localStorage.setItem(storageKey, JSON.stringify(saved));
     render();
   };
@@ -185,13 +206,18 @@ function render() {
     var d = new Date(year, m, 1);
     while (d.getMonth() === m) {
       var key = d.toISOString().slice(0,10);
+      var trend = getTrend(key);
+
       var day = document.createElement("div");
       day.className = "day";
       if (key === todayKey) day.className += " today";
 
       day.innerHTML =
         d.getDate() +
-        (saved[key] ? '<div class="weight">' + saved[key] + '</div>' : '');
+        (saved[key] ? '<div class="weight">' + saved[key] + '</div>' : '') +
+        (trend ? '<div class="trend ' + trend + '">' +
+          (trend === 'up' ? '▲' : trend === 'down' ? '▼' : '—') +
+        '</div>' : '');
 
       day.onclick = (function(key){
         return function(){ openModal(key); };
