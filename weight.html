@@ -9,7 +9,7 @@
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
-  background: #022c22; /* deep green-teal */
+  background: #022c22;
   color: #ecfeff;
 }
 
@@ -24,7 +24,7 @@ h1 {
 h2 {
   margin: 8px 16px;
   font-size: 1rem;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .grid {
@@ -51,8 +51,7 @@ h2 {
 
 .day .weight {
   font-size: 0.65rem;
-  opacity: 0.8;
-  margin-top: 2px;
+  opacity: 0.85;
 }
 
 .day .trend {
@@ -64,7 +63,6 @@ h2 {
 .trend.down { color: #34d399; }
 .trend.same { color: #fde68a; }
 
-/* modal */
 .modal {
   position: fixed;
   inset: 0;
@@ -102,10 +100,21 @@ button {
   cursor: pointer;
 }
 
+.graph {
+  padding: 16px;
+}
+
+canvas {
+  width: 100%;
+  height: 180px;
+  background: #064e3b;
+  border-radius: 12px;
+}
+
 .nav {
   text-align: center;
   padding: 24px;
-  opacity: .7;
+  opacity: .8;
 }
 
 .nav a {
@@ -119,6 +128,11 @@ button {
 
 <h1 id="title"></h1>
 <div id="months"></div>
+
+<div class="graph">
+  <h2>Weight Trend</h2>
+  <canvas id="chart" width="600" height="180"></canvas>
+</div>
 
 <div class="modal" id="modal">
   <div class="sheet">
@@ -145,6 +159,8 @@ var storageKey = "dailyWeight";
 var saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
 var monthsEl = document.getElementById("months");
 var weightInput = document.getElementById("weightInput");
+var canvas = document.getElementById("chart");
+var ctx = canvas.getContext("2d");
 
 var monthNames = [
   "January","February","March","April","May","June",
@@ -178,6 +194,7 @@ function openModal(dateKey) {
     var val = parseFloat(weightInput.value);
     if (!isNaN(val)) saved[dateKey] = val;
     else delete saved[dateKey];
+
     localStorage.setItem(storageKey, JSON.stringify(saved));
     render();
   };
@@ -187,6 +204,32 @@ function openModal(dateKey) {
 
 function closeModal() {
   document.getElementById("modal").className = "modal";
+}
+
+function drawChart() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  var entries = Object.keys(saved)
+    .sort()
+    .map(k => saved[k]);
+
+  if (entries.length < 2) return;
+
+  var min = Math.min.apply(null, entries);
+  var max = Math.max.apply(null, entries);
+  var range = max - min || 1;
+
+  ctx.strokeStyle = "#34d399";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+
+  for (var i = 0; i < entries.length; i++) {
+    var x = (i / (entries.length - 1)) * canvas.width;
+    var y = canvas.height - ((entries[i] - min) / range) * canvas.height;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
 }
 
 function render() {
@@ -230,6 +273,8 @@ function render() {
     monthDiv.appendChild(grid);
     monthsEl.appendChild(monthDiv);
   }
+
+  drawChart();
 }
 
 render();
